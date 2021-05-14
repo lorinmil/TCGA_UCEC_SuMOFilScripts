@@ -3,15 +3,16 @@ library(SummarizedExperiment)
 library(GenomicRanges)
 library(stringr)
 library(parallel)
+library(PMA)
 
-#My own library
+#Library from GitHub
 library(SuMOFil)
 
 #------------------------------Set up data-------------------------------#
 
-#Load the data now so you don't have to re-import
-load("C:/Users/lorin/Box/UB Masters Project/Real Data/v3/UCEC_TCGA.Rdata")
-
+#---Load TCGA Data---#
+#Load the data from Step 2 (update location)
+load("DATA LOCATION HERE/UCEC_TCGA.Rdata")
 
 
 #---Drill down to the data for analysis---#
@@ -58,17 +59,15 @@ rm(list=base::setdiff(ls(), c("trans.measure", "methy.measure", "y", "trans.gene
 
 
 
-#Save this data
-save.image("C:/Users/lorin/Box/UB Masters Project/Real Data/v3/chr10_totalPelvLNR/TCGAdata_Chr10_PelvLNR.Rdata")
+#(Optional) Save this data
+save.image("DATA LOCATION HERE/TCGAdata_Chr10_PelvLNR.Rdata")
 
 #Load the data (if the above has already been ran)
-load("C:/Users/lorin/Box/UB Masters Project/Real Data/v3/chr10_totalPelvLNR/TCGAdata_Chr10_PelvLNR.Rdata")
+load("DATA LOCATION HERE/TCGAdata_Chr10_PelvLNR.Rdata")
 
 
 
 #----------------------Perform methods before filtering----------------#
-library(PMA)
-
 
 #Perform CCA from witten
 time1 <- Sys.time()
@@ -89,12 +88,12 @@ CCA_PMA <- PMA::CCA(x=trans.measure,
 time2 <- Sys.time()
 timeB4Filter_CCA_PMA <- time2 - time1
 CCA_PMA$runTime <- timeB4Filter_CCA_PMA
-#7.328901 mins
-#Save outputs
-saveRDS(CCA_PMA, "C:/Users/lorin/Box/UB Masters Project/Real Data/v3/chr10_totalPelvLNR/CCA_PMA_before.rda")
+
+#(Optional) Save outputs
+saveRDS(CCA_PMA, "DATA LOCATION HERE/CCA_PMA_before.rda")
 
 #Read the outputs (if it wasn't reran)
-CCA_PMA <- readRDS("C:/Users/lorin/Box/UB Masters Project/Real Data/v3/chr10_totalPelvLNR/CCA_PMA_before.rda")
+CCA_PMA <- readRDS("DATA LOCATION HERE/CCA_PMA_before.rda")
 selectedPMAx_before <- which(CCA_PMA$u!=0)
 selectedPMAg_before <- which(CCA_PMA$v!=0)
 length(selectedPMAx_before)
@@ -116,12 +115,11 @@ filterResults <- SuMOFil(x=trans.measure,
                          numClusters_2=3)
 time2 <- Sys.time()
 timeSuMOFil <- time2 - time1
-#30.57238 secs
 
 
-#Save outputs
-saveRDS(filterResults, "C:/Users/lorin/Box/UB Masters Project/Real Data/v3/chr10_totalPelvLNR/filterResults_SuMOFil.rda")
-filterResults <- readRDS("C:/Users/lorin/Box/UB Masters Project/Real Data/v3/chr10_totalPelvLNR/filterResults_SuMOFil.rda")
+#(Optional) Save outputs
+saveRDS(filterResults, "DATA LOCATION HERE/filterResults_SuMOFil.rda")
+filterResults <- readRDS("DATA LOCATION HERE/filterResults_SuMOFil.rda")
 
 
 #Perform CCA from tibshirani
@@ -142,13 +140,14 @@ CCA_PMASuMOFil <- PMA::CCA(x=trans.measure[,-as.numeric(filterResults$removeX_bo
                     penaltyz=CCA_PMA_SuMOFiltune$bestpenaltyz)
 time2 <- Sys.time()
 timeSuMOFil_CCA_PMA <- time2 - time1
-#5.34817 mins
 CCA_PMASuMOFil$runTime <- timeSuMOFil_CCA_PMA
-#Save outputs
-saveRDS(CCA_PMASuMOFil, "C:/Users/lorin/Box/UB Masters Project/Real Data/v3/chr10_totalPelvLNR/CCA_PMASuMOFil.rda")
+
+#(Optional) Save outputs
+saveRDS(CCA_PMASuMOFil, "DATA LOCATION HERE/CCA_PMASuMOFil.rda")
 
 #Read outputs (if it wasn't reran)
-CCA_PMASuMOFil <- readRDS("C:/Users/lorin/Box/UB Masters Project/Real Data/v3/chr10_totalPelvLNR/CCA_PMASuMOFil.rda")
+CCA_PMASuMOFil <- readRDS("DATA LOCATION HERE/CCA_PMASuMOFil.rda")
+
 #What was selected after the filter?
 selectedPMAx_SuMOFIL <- (1:ncol(trans.measure))[-as.numeric(filterResults$removeX_both)][which(CCA_PMASuMOFil$u!=0)]
 selectedPMAg_SuMOFIL <- (1:ncol(methy.measure))[-as.numeric(filterResults$removeG_both)][which(CCA_PMASuMOFil$v!=0)]
@@ -185,7 +184,6 @@ removeG_mean <- rep("Keep", ncol(methy.measure))
 removeG_mean[gMeanClust$cluster == smallestG] <- "Remove"
 time2 <- Sys.time()
 time2 - time1
-#0.05677605
 
 
 #Perform CCA from tibshirani
@@ -206,13 +204,14 @@ CCA_PMALowMean <- PMA::CCA(x=trans.measure[,as.numeric(which(removeX_mean=="Keep
                            penaltyz=CCA_PMA_LowMeantune$bestpenaltyz)
 time2 <- Sys.time()
 timeLowMean_CCA_PMA <- time2 - time1
-#4.613243 mins
 CCA_PMALowMean$runTime <- timeLowMean_CCA_PMA
-#Save outputs
-saveRDS(CCA_PMALowMean, "C:/Users/lorin/Box/UB Masters Project/Real Data/v3/chr10_totalPelvLNR/CCA_PMALowMean.rda")
+
+#(Optional) Save outputs
+saveRDS(CCA_PMALowMean, "DATA LOCATION HERE/CCA_PMALowMean.rda")
 
 #Read the data (if it wasn't reran)
-CCA_PMALowMean <- readRDS("C:/Users/lorin/Box/UB Masters Project/Real Data/v3/chr10_totalPelvLNR/CCA_PMALowMean.rda")
+CCA_PMALowMean <- readRDS("DATA LOCATION HERE/CCA_PMALowMean.rda")
+
 #What was selected after the filter?
 selectedPMAx_LowMean <- (1:ncol(trans.measure))[as.numeric(which(removeX_mean=="Keep"))][which(CCA_PMALowMean$u!=0)]
 selectedPMAg_LowMean <- (1:ncol(methy.measure))[as.numeric(which(removeG_mean=="Keep"))][which(CCA_PMALowMean$v!=0)]
@@ -251,7 +250,6 @@ removeG_var <- rep("Keep", ncol(methy.measure))
 removeG_var[gVarClust$cluster == smallestG] <- "Remove"
 time2 <- Sys.time()
 time2 - time1
-#1.751875 secs
 
 
 #Perform CCA from tibshirani
@@ -272,13 +270,14 @@ CCA_PMALowVar <- PMA::CCA(x=trans.measure[,as.numeric(which(removeX_var=="Keep")
                            penaltyz=CCA_PMA_LowVartune$bestpenaltyz)
 time2 <- Sys.time()
 timeLowVar_CCA_PMA <- time2 - time1
-#3.349482 mins
 CCA_PMALowVar$runTime <- timeLowVar_CCA_PMA
-#Save outputs
-saveRDS(CCA_PMALowVar, "C:/Users/lorin/Box/UB Masters Project/Real Data/v3/chr10_totalPelvLNR/CCA_PMALowVar.rda")
+
+#(Optional) Save outputs
+saveRDS(CCA_PMALowVar, "DATA LOCATION HERE/CCA_PMALowVar.rda")
 
 #Read outputs (if it wasn't reran)
-CCA_PMALowVar <- readRDS("C:/Users/lorin/Box/UB Masters Project/Real Data/v3/chr10_totalPelvLNR/CCA_PMALowVar.rda")
+CCA_PMALowVar <- readRDS("DATA LOCATION HERE/CCA_PMALowVar.rda")
+
 #What was selected after the filter?
 selectedPMAx_LowVar <- (1:ncol(trans.measure))[as.numeric(which(removeX_var=="Keep"))][which(CCA_PMALowVar$u!=0)]
 selectedPMAg_LowVar <- (1:ncol(methy.measure))[as.numeric(which(removeG_var=="Keep"))][which(CCA_PMALowVar$v!=0)]
@@ -323,8 +322,8 @@ X_comb[selectedX_comb %in% as.numeric(filterResults$removeX_both), "filtered_SuM
 X_comb[selectedX_comb %in% which(removeX_mean=="Remove"), "filtered_lowmeans"] <- 1
 X_comb[selectedX_comb %in% which(removeX_var=="Remove"), "filtered_lowvar"] <- 1
 
-#Export to CSV
-write.csv(X_comb, "C:/Users/lorin/Box/UB Masters Project/Real Data/v3/chr10_totalPelvLNR/XSelections_Chr10_PelvLNR.csv", na="")
+#(Optional) Export to CSV
+write.csv(X_comb, "DATA LOCATION HERE/XSelections_Chr10_PelvLNR.csv", na="")
 
 
 
@@ -354,16 +353,9 @@ G_comb[selectedG_comb %in% as.numeric(filterResults$removeG_both), "filtered_SuM
 G_comb[selectedG_comb %in% which(removeG_mean=="Remove"), "filtered_lowmeans"] <- 1
 G_comb[selectedG_comb %in% which(removeG_var=="Remove"), "filtered_lowvar"] <- 1
 
-# test <- unlist(lapply(X_comb$geneName[X_comb$selected_unfiltered==1], FUN=function(g){
-#   sum(grepl(g, G_comb$geneSymbol[G_comb$selected_unfiltered==1]))
-# }))
-# test[test>0] <- 1
-# table(test)
 
-
-
-#Export to CSV
-write.csv(G_comb, "C:/Users/lorin/Box/UB Masters Project/Real Data/v3/chr10_totalPelvLNR/GSelections_Chr10_PelvLNR.csv", na="")
+#(Optional) Export to CSV
+write.csv(G_comb, "DATA LOCATION HERE/GSelections_Chr10_PelvLNR.csv", na="")
 
 
 

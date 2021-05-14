@@ -2,6 +2,8 @@
 
 This respository contains R code to replicate the real data application found in https://doi.org/10.1101/2020.03.12.985077. These instructions will query the UCEC project data from TCGA; pull out the DNA methylation, gene expression, and clinical datasets; limit data to chromosome 10; clean/scale the data; apply SuMO-Fil, low mean, and low variance filtering; execute supervised SCCA on the unfiltered and filtered data by each of the different techniques.
 
+Note that the results from the filtering and network detections may also be viewed directly from the FinalSelectionOutputs.xlsx file.
+
 # Instructions
 
 Required R packages: TCGAbiolinks, SummarizedExperiment, GenomicRanges, stringr, parallel

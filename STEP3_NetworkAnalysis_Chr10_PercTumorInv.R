@@ -3,59 +3,15 @@ library(SummarizedExperiment)
 library(GenomicRanges)
 library(stringr)
 library(parallel)
+library(PMA)
 
-#My own library
+#Must be downloaded from GibHub
 library(SuMOFil)
 
-#------------------------------Set up data-------------------------------#
-#Load data
-setwd('C:/Users/lorin/Desktop/UB Masters Project/Folder2')
 
-#Only ran once
-# source("./tcga_ucec prepare clinical.R")
-# source("./tcga_ucec prepare dna methylation.R")
-# source("./tcga_ucec prepare transcripts.R")
-
-#Read the data
-load('./results/examples/Rdata/UCEC/clinical_UCEC.rdata')
-load('./results/examples/Rdata/UCEC/dnamethy_UCEC.rdata')
-load('./results/examples/Rdata/UCEC/transcripts_UCEC.rdata')
-
-#Pull out gene info
-trans.rowRanges <- rowRanges(trans.UCEC.sumy)
-methy.rowRanges <- rowRanges(methy.UCEC.sumy)
-#Organize gene info into a matrix
-trans.geneInfo <- data.frame(geneID = trans.rowRanges$ensembl_gene_id,
-                             geneName = trans.rowRanges$external_gene_name,
-                             origGeneID = trans.rowRanges$original_ensembl_gene_id)
-methy.geneInfo <- data.frame(geneID = methy.rowRanges$Composite.Element.REF,
-                             geneSymbol = methy.rowRanges$Gene_Symbol,
-                             transcriptID = methy.rowRanges$Transcript_ID)
-
-#Extract the chromosomal information
-methyChroms <- as.character(seqnames(methy.compound.info))
-transChroms <- as.character(seqnames(trans.UCEC.sumy))
-
-
-#Remove the unnecessary stuff from the R environment
-rm(list=base::setdiff(ls(), c("trans.measure", "methy.measure", "ucec.clinical", "methyChroms", "transChroms", "",
-                              "trans.geneInfo", "methy.geneInfo")))
-
-#Extract the common patient IDs
-colnames(trans.measure) <- substr(colnames(trans.measure), 9, 12)
-colnames(methy.measure) <- substr(colnames(methy.measure), 9, 12)
-keepIDs <- colnames(methy.measure)[colnames(methy.measure) %in% colnames(trans.measure)]
-rownames(ucec.clinical) <- ucec.clinical$patient_id
-ucec.clinical <- ucec.clinical[keepIDs,]
-
-
-
-#---Save up to this point---#
-#ONLY RUN ONCE!
-# save.image("C:/Users/lorin/Box/UB Masters Project/Real Data/v3/UCEC_TCGA.Rdata")
-
-#Load the data now so you don't have to re-import
-load("C:/Users/lorin/Box/UB Masters Project/Real Data/v3/UCEC_TCGA.Rdata")
+#---Load TCGA Data---#
+#Load the data from Step 2 (update location)
+load("DATA LOCATION HERE/UCEC_TCGA.Rdata")
 
 
 
@@ -101,19 +57,17 @@ rm(list=base::setdiff(ls(), c("trans.measure", "methy.measure", "y", "trans.gene
                               "trans.measure_unscaled", "methy.measure_unscaled")))
 
 
-#Save this data
-save.image("C:/Users/lorin/Box/UB Masters Project/Real Data/v3/chr10_PercTumorInv/TCGAdata_Chr10_PercTumorInv.Rdata")
+#(Optional) Save this data, only run this once
+save.image("DATA LOCATION HERE/TCGAdata_Chr10_PercTumorInv.Rdata")
 
 #Load the data (if the above has already been ran)
-load("C:/Users/lorin/Box/UB Masters Project/Real Data/v3/chr10_PercTumorInv/TCGAdata_Chr10_PercTumorInv.Rdata")
+load("DATA LOCATION HERE/TCGAdata_Chr10_PercTumorInv.Rdata")
 
 
 
 
 
 #----------------------Perform methods before filtering----------------#
-library(PMA)
-
 
 #Perform CCA from tibshirani
 time1 <- Sys.time()
@@ -134,12 +88,12 @@ CCA_PMA <- PMA::CCA(x=trans.measure,
 time2 <- Sys.time()
 timeB4Filter_CCA_PMA <- time2 - time1
 CCA_PMA$runTime <- timeB4Filter_CCA_PMA
-#6.893854 mins
-#Save outputs
-saveRDS(CCA_PMA, "C:/Users/lorin/Box/UB Masters Project/Real Data/v3/chr10_PercTumorInv/CCA_PMA_before.rda")
 
-#Read data
-CCA_PMA <- readRDS("C:/Users/lorin/Box/UB Masters Project/Real Data/v3/chr10_PercTumorInv/CCA_PMA_before.rda")
+#(Optional) Save outputs
+saveRDS(CCA_PMA, "DATA LOCATION HERE/CCA_PMA_before.rda")
+
+#Read data (if above has already been saved so don't have to re-execute)
+CCA_PMA <- readRDS("DATA LOCATION HERE/CCA_PMA_before.rda")
 selectedPMAx_before <- which(CCA_PMA$u!=0)
 selectedPMAg_before <- which(CCA_PMA$v!=0)
 
@@ -161,12 +115,11 @@ filterResults <- SuMOFil(x=trans.measure,
                          numClusters_2=3)
 time2 <- Sys.time()
 timeSuMOFil <- time2 - time1
-#28.03272 secs
 
 
-#Save outputs
-saveRDS(filterResults, "C:/Users/lorin/Box/UB Masters Project/Real Data/v3/chr10_PercTumorInv/filterResults_SuMOFil.rda")
-filterResults <- readRDS("C:/Users/lorin/Box/UB Masters Project/Real Data/v3/chr10_PercTumorInv/filterResults_SuMOFil.rda")
+#(optional) Save outputs
+saveRDS(filterResults, "DATA LOCATION HERE/filterResults_SuMOFil.rda")
+filterResults <- readRDS("DATA LOCATION HERE/filterResults_SuMOFil.rda")
 
 
 #Perform CCA from tibshirani
@@ -187,13 +140,14 @@ CCA_PMASuMOFil <- PMA::CCA(x=trans.measure[,-as.numeric(filterResults$removeX_bo
                     penaltyz=CCA_PMA_SuMOFiltune$bestpenaltyz)
 time2 <- Sys.time()
 timeSuMOFil_CCA_PMA <- time2 - time1
-#4.56011 mins
 CCA_PMASuMOFil$runTime <- timeSuMOFil_CCA_PMA
-#Save outputs
-saveRDS(CCA_PMASuMOFil, "C:/Users/lorin/Box/UB Masters Project/Real Data/v3/chr10_PercTumorInv/CCA_PMASuMOFil.rda")
+
+#(Optional) Save outputs
+saveRDS(CCA_PMASuMOFil, "DATA LOCATION HERE/chr10_PercTumorInv/CCA_PMASuMOFil.rda")
 
 #Read outputs (only if it wasn't reran)
-CCA_PMASuMOFil <- readRDS("C:/Users/lorin/Box/UB Masters Project/Real Data/v3/chr10_PercTumorInv/CCA_PMASuMOFil.rda")
+CCA_PMASuMOFil <- readRDS("DATA LOCATION HERE/CCA_PMASuMOFil.rda")
+
 #What was selected after the filter?
 selectedPMAx_SuMOFIL <- (1:ncol(trans.measure))[-as.numeric(filterResults$removeX_both)][which(CCA_PMASuMOFil$u!=0)]
 selectedPMAg_SuMOFIL <- (1:ncol(methy.measure))[-as.numeric(filterResults$removeG_both)][which(CCA_PMASuMOFil$v!=0)]
@@ -230,7 +184,7 @@ removeG_mean <- rep("Keep", ncol(methy.measure))
 removeG_mean[gMeanClust$cluster == smallestG] <- "Remove"
 time2 <- Sys.time()
 time2 - time1
-#0.07878613 secs
+
 #How many were removed?
 sum(removeX_mean=="Remove")
 sum(removeG_mean=="Remove")
@@ -255,13 +209,14 @@ CCA_PMALowMean <- PMA::CCA(x=trans.measure[,as.numeric(which(removeX_mean=="Keep
                            penaltyz=CCA_PMA_LowMeantune$bestpenaltyz)
 time2 <- Sys.time()
 timeLowMean_CCA_PMA <- time2 - time1
-#4.095744 mins
 CCA_PMALowMean$runTime <- timeLowMean_CCA_PMA
-#Save outputs
-saveRDS(CCA_PMALowMean, "C:/Users/lorin/Box/UB Masters Project/Real Data/v3/chr10_PercTumorInv/CCA_PMALowMean.rda")
+
+#(Optional) Save outputs
+saveRDS(CCA_PMALowMean, "DATA LOCATION HERE/CCA_PMALowMean.rda")
 
 #Read the outputs (only if it hasn't been rerun)
-CCA_PMALowMean <- readRDS("C:/Users/lorin/Box/UB Masters Project/Real Data/v3/chr10_PercTumorInv/CCA_PMALowMean.rda")
+CCA_PMALowMean <- readRDS("DATA LOCATION HERE/CCA_PMALowMean.rda")
+
 #What was selected after the filter?
 selectedPMAx_LowMean <- (1:ncol(trans.measure))[as.numeric(which(removeX_mean=="Keep"))][which(CCA_PMALowMean$u!=0)]
 selectedPMAg_LowMean <- (1:ncol(methy.measure))[as.numeric(which(removeG_mean=="Keep"))][which(CCA_PMALowMean$v!=0)]
@@ -300,12 +255,10 @@ removeG_var <- rep("Keep", ncol(methy.measure))
 removeG_var[gVarClust$cluster == smallestG] <- "Remove"
 time2 <- Sys.time()
 time2 - time1
-#0.454783 secs
+
 #How many removed?
 sum(removeX_var=="Remove")
 sum(removeG_var=="Remove")
-
-
 
 #Perform CCA from tibshirani
 time1 <- Sys.time()
@@ -325,13 +278,14 @@ CCA_PMALowVar <- PMA::CCA(x=trans.measure[,as.numeric(which(removeX_var=="Keep")
                            penaltyz=CCA_PMA_LowVartune$bestpenaltyz)
 time2 <- Sys.time()
 timeLowVar_CCA_PMA <- time2 - time1
-#2.985954 mins
 CCA_PMALowVar$runTime <- timeLowVar_CCA_PMA
-#Save outputs
-saveRDS(CCA_PMALowVar, "C:/Users/lorin/Box/UB Masters Project/Real Data/v3/chr10_PercTumorInv/CCA_PMALowVar")
+
+#(Optional) Save outputs
+saveRDS(CCA_PMALowVar, "DATA LOCATION HERE/CCA_PMALowVar")
 
 #Read the outputs (only if it hasn't been rerun)
-CCA_PMALowVar <- readRDS("C:/Users/lorin/Box/UB Masters Project/Real Data/v3/chr10_PercTumorInv/CCA_PMALowVar")
+CCA_PMALowVar <- readRDS("DATA LOCATION HERE/chr10_PercTumorInv/CCA_PMALowVar")
+
 #What was selected after the filter?
 selectedPMAx_LowVar <- (1:ncol(trans.measure))[as.numeric(which(removeX_var=="Keep"))][which(CCA_PMALowVar$u!=0)]
 selectedPMAg_LowVar <- (1:ncol(methy.measure))[as.numeric(which(removeG_var=="Keep"))][which(CCA_PMALowVar$v!=0)]
@@ -381,8 +335,8 @@ X_comb[selectedX_comb %in% as.numeric(filterResults$removeX_both), "filtered_SuM
 X_comb[selectedX_comb %in% which(removeX_mean=="Remove"), "filtered_lowmeans"] <- 1
 X_comb[selectedX_comb %in% which(removeX_var=="Remove"), "filtered_lowvar"] <- 1
 
-#Export to CSV
-write.csv(X_comb, "C:/Users/lorin/Box/UB Masters Project/Real Data/v3/chr10_PercTumorInv/XSelections_PercTumorInv.csv", na="")
+#(Optional) Export to CSV
+write.csv(X_comb, "DATA LOCATION HERE/XSelections_PercTumorInv.csv", na="")
 
 
 
@@ -412,14 +366,8 @@ G_comb[selectedG_comb %in% as.numeric(filterResults$removeG_both), "filtered_SuM
 G_comb[selectedG_comb %in% which(removeG_mean=="Remove"), "filtered_lowmeans"] <- 1
 G_comb[selectedG_comb %in% which(removeG_var=="Remove"), "filtered_lowvar"] <- 1
 
-# test <- unlist(lapply(X_comb$geneName[X_comb$selected_unfiltered==1], FUN=function(g){
-#   sum(grepl(g, G_comb$geneSymbol[G_comb$selected_unfiltered==1]))
-# }))
-# test[test>0] <- 1
-# table(test)
-
-#Export to CSV
-write.csv(G_comb, "C:/Users/lorin/Box/UB Masters Project/Real Data/v3/chr10_PercTumorInv/GSelections_PercTumorInv.csv", na="")
+#(Optional) Export to CSV
+write.csv(G_comb, "DATA LOCATION HERE/GSelections_PercTumorInv.csv", na="")
 
 
 

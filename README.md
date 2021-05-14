@@ -33,5 +33,9 @@ To make data set RDT1 from extracting data from TCGA:
    
    ## STEP3 3: Conduct Analysis for Percent Tumor Invasion on Chromosome 10  
    
+   Run the code from the STEP3_NetworkAnalysis_Chr10_PercTumorInv.R file. Make sure to update folder locations.
+   
    ## STEP3 4: Conduct Analysis for Total Pelvic Lymph Node Ratio on Chromosome 10
+   
+   Run the code from the STEP4_NetworkAnalysis_Chr10_PelvLNR.R file. Make sure to update folder locations.
    
